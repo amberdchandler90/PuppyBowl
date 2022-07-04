@@ -1,7 +1,10 @@
-import { fetchAllPlayers } from './ajaxHelpers';
+
+
+import { fetchAllPlayers, fetchSinglePlayer, removePlayer} from './ajaxHelpers';
 
 const playerContainer = document.getElementById('all-players-container');
 const newPlayerFormContainer = document.getElementById('new-player-form');
+
 
 export const renderAllPlayers = (playerList) => {
   // First check if we have any data before trying to render it!
@@ -22,9 +25,12 @@ export const renderAllPlayers = (playerList) => {
         </div>
         <img src="${pup.imageUrl}" alt="photo of ${pup.name} the puppy">
         <button class="detail-button" data-id=${pup.id}>See details</button>
+        <button class="delete-button" data-id=${pup.id}>delete</button>
       </div>
     `;
     playerContainerHTML += pupHTML;
+
+
   }
 
   // After looping, fill the `playerContainer` div with the HTML we constructed above
@@ -36,14 +42,30 @@ export const renderAllPlayers = (playerList) => {
   let detailButtons = [...document.getElementsByClassName('detail-button')];
   for (let i = 0; i < detailButtons.length; i++) {
     const button = detailButtons[i];
+    
     button.addEventListener('click', async () => {
+
+      const loneDoggy = await fetchSinglePlayer(button.dataset.id) 
+      console.log(button.dataset.id)
+      console.log(await loneDoggy)
+      renderSinglePlayer(loneDoggy);
       /*
         YOUR CODE HERE
       */
+
     });
   }
-};
 
+  let deleteButtons = [...document.getElementsByClassName('delete-button')];
+  for (let i = 0; i < deleteButtons.length; i++) {
+   const button = deleteButtons[i];
+   button.addEventListener('click', async () => {
+    await removePlayer(button.dataset.id);
+    const players = await fetchAllPlayers();
+    renderAllPlayers(players);
+  });
+  } 
+};
 export const renderSinglePlayer = (playerObj) => {
   if (!playerObj || !playerObj.id) {
     playerContainer.innerHTML = "<h3>Couldn't find data for this player!</h3>";
@@ -66,6 +88,18 @@ export const renderSinglePlayer = (playerObj) => {
   `;
 
   playerContainer.innerHTML = pupHTML;
+
+  let backButton = document.getElementById('see-all');
+
+  backButton.addEventListener("click", async()=>{
+
+    const players = await fetchAllPlayers();
+    renderAllPlayers(players);
+  
+    renderNewPlayerForm();
+
+  });
+
 };
 
 export const renderNewPlayerForm = () => {
@@ -82,6 +116,38 @@ export const renderNewPlayerForm = () => {
 
   let form = document.querySelector('#new-player-form > form');
   form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    let playerData = {
+      name: form.elements.name.value,
+      breed: form.elements.breed.value
+    }
+
+    try {
+      const response = await fetch(
+        'https://fsa-puppy-bowl.herokuapp.com/api/2110-ftb-web-pt/players',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: playerData.name,
+            breed: playerData.breed,
+          }),
+        }
+      );
+      const result = await response.json();
+      console.log(result);
+    } catch (err) {
+      console.error(err);
+    }
+
+    const players = await fetchAllPlayers();
+    renderAllPlayers(players);
+  
+    renderNewPlayerForm();
+
     /*
       YOUR CODE HERE
     */
